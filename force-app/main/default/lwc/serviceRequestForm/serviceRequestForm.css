@@ -1,0 +1,3 @@
+.recent-row:not(:last-child) {
+    border-bottom: 1px solid var(--lwc-colorBorder);
+}

@@ -1,0 +1,78 @@
+<template>
+    <lightning-card title="Service Request Form" icon-name="standard:case">
+        <div class="slds-p-around_medium">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Saving service request" size="small"></lightning-spinner>
+            </template>
+
+            <div class="slds-grid slds-wrap slds-gutters_small">
+                <div class="slds-col slds-size_1-of-1">
+                    <lightning-input
+                        type="email"
+                        label="Customer Email"
+                        value={email}
+                        data-field="email"
+                        onchange={handleFieldChange}
+                        required
+                    ></lightning-input>
+                </div>
+
+                <div class="slds-col slds-size_1-of-1">
+                    <lightning-textarea
+                        label="Description"
+                        value={description}
+                        data-field="description"
+                        onchange={handleFieldChange}
+                    ></lightning-textarea>
+                </div>
+
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                    <lightning-combobox
+                        label="Priority"
+                        value={priority}
+                        options={priorityOptions}
+                        data-field="priority"
+                        onchange={handleFieldChange}
+                        required
+                    ></lightning-combobox>
+                </div>
+
+                <div class="slds-col slds-size_1-of-1">
+                    <lightning-button
+                        variant="brand"
+                        label="Create Service Request"
+                        onclick={handleSubmit}
+                        disabled={isLoading}
+                    ></lightning-button>
+                </div>
+            </div>
+
+            <template if:true={createdRecordId}>
+                <div class="slds-m-top_medium slds-text-color_success">
+                    Created Service Request Id: {createdRecordId}
+                </div>
+            </template>
+
+            <template if:true={errorMessage}>
+                <div class="slds-m-top_medium slds-text-color_error">
+                    {errorMessage}
+                </div>
+            </template>
+        </div>
+
+        <template if:true={recentRequests.length}>
+            <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+                <p class="slds-text-title_caps slds-m-bottom_small">Recent Service Requests</p>
+                <div class="slds-box slds-theme_default">
+                    <template for:each={recentRequests} for:item="requestRecord">
+                        <div key={requestRecord.Id} class="slds-p-vertical_x-small recent-row">
+                            <p class="slds-text-heading_small">{requestRecord.Name}</p>
+                            <p>{requestRecord.Customer_Email__c}</p>
+                            <p>{requestRecord.Priority__c} · {requestRecord.Status__c}</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </lightning-card>
+</template>

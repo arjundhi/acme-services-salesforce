@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Recent_Service_Requests</fullName>
+    <label>Recent Service Requests</label>
+    <filterScope>Everything</filterScope>
+    <columns>Customer_Email__c</columns>
+    <columns>Priority__c</columns>
+    <columns>Status__c</columns>
+    <filters>
+        <field>Status__c</field>
+        <operation>notEqual</operation>
+        <value>Resolved</value>
+    </filters>
+    <sharedTo>
+        <allCustomerPortalUsers>false</allCustomerPortalUsers>
+        <allInternalUsers>true</allInternalUsers>
+        <allPartnerUsers>false</allPartnerUsers>
+    </sharedTo>
+</ListView>
