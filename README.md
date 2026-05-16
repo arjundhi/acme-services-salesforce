@@ -2,6 +2,10 @@
 
 A small Salesforce DX project that lets agents create and resolve Service Requests. Built to show clean architecture, bulk-safe Apex, and a working LWC.
 
+## Screenshot
+
+![Service Request Form](docs/screenshot.png)
+
 ## What's in the box
 
 - `Service_Request__c` custom object + fields (metadata)
@@ -14,7 +18,7 @@ A small Salesforce DX project that lets agents create and resolve Service Reques
 
 ## Architecture
 
-Kept it simple on purpose — no unnecessary abstraction layers:
+Kept it simple on purpose, no unnecessary abstraction layers:
 
 - **Service class** owns all validation and DML. Everything goes through here.
 - **Controller** is a thin wrapper that catches exceptions and re-throws as `AuraHandledException`.
