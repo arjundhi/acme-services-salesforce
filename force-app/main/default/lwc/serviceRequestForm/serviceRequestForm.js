@@ -3,6 +3,7 @@ import { refreshApex } from '@salesforce/apex';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import createServiceRequest from '@salesforce/apex/ServiceRequestController.createServiceRequest';
 import getRecentServiceRequests from '@salesforce/apex/ServiceRequestController.getRecentServiceRequests';
+import resolveServiceRequest from '@salesforce/apex/ServiceRequestController.resolveServiceRequest';
 
 export default class ServiceRequestForm extends LightningElement {
     email = '';
@@ -14,6 +15,13 @@ export default class ServiceRequestForm extends LightningElement {
     recentRequests = [];
     wiredRecentRequestsResult;
 
+    // Resolve modal state
+    showResolveModal = false;
+    resolveRecordId;
+    resolveRecordName;
+    resolutionNotes = '';
+    isResolving = false;
+
     priorityOptions = [
         { label: 'Low', value: 'Low' },
         { label: 'Medium', value: 'Medium' },
@@ -24,7 +32,10 @@ export default class ServiceRequestForm extends LightningElement {
     wiredRecentRequests(result) {
         this.wiredRecentRequestsResult = result;
         if (result.data) {
-            this.recentRequests = result.data;
+            this.recentRequests = result.data.map(record => ({
+                ...record,
+                isResolved: record.Status__c === 'Resolved'
+            }));
         } else if (result.error) {
             this.recentRequests = [];
             console.error('Error loading recent requests:', result.error);
@@ -160,5 +171,63 @@ export default class ServiceRequestForm extends LightningElement {
             }
         }
         return error.message || 'Unable to create the service request. Please try again.';
+    }
+
+    // ---------- Resolve handlers ----------
+
+    handleResolve(event) {
+        this.resolveRecordId = event.target.dataset.id;
+        this.resolveRecordName = event.target.dataset.name;
+        this.resolutionNotes = '';
+        this.showResolveModal = true;
+    }
+
+    handleResolutionNotesChange(event) {
+        this.resolutionNotes = event.target.value;
+    }
+
+    handleCancelResolve() {
+        this.showResolveModal = false;
+        this.resolveRecordId = undefined;
+        this.resolveRecordName = undefined;
+        this.resolutionNotes = '';
+    }
+
+    async handleConfirmResolve() {
+        if (!this.resolutionNotes || this.resolutionNotes.trim() === '') {
+            this.dispatchEvent(
+                new ShowToastEvent({ title: 'Validation', message: 'Resolution notes are required.', variant: 'warning' })
+            );
+            return;
+        }
+
+        this.isResolving = true;
+        try {
+            await resolveServiceRequest({
+                serviceRequestId: this.resolveRecordId,
+                resolutionNotes: this.resolutionNotes.trim()
+            });
+
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Resolved',
+                    message: `${this.resolveRecordName} has been resolved.`,
+                    variant: 'success'
+                })
+            );
+
+            this.handleCancelResolve();
+            await refreshApex(this.wiredRecentRequestsResult);
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error Resolving',
+                    message: this.getErrorMessage(error),
+                    variant: 'error'
+                })
+            );
+        } finally {
+            this.isResolving = false;
+        }
     }
 }

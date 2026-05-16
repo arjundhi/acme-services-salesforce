@@ -1,94 +1,74 @@
-# Acme Services Take-Home Assessment
+# Acme Services — Salesforce Take-Home
 
-This project implements a lean but production-minded Salesforce solution for creating and resolving customer `Service_Request__c` records.
+A small Salesforce DX project that lets agents create and resolve Service Requests. Built to show clean architecture, bulk-safe Apex, and a working LWC.
 
-## What’s Included
+## What's in the box
 
-- Custom object metadata for `Service_Request__c`
-- Apex service layer for create and resolve operations
-- LWC-facing Apex controller
-- `serviceRequestForm` Lightning Web Component
-- Apex test coverage for positive, negative, and bulk scenarios
-- Agentforce integration notes for the optional bonus
+- `Service_Request__c` custom object + fields (metadata)
+- `ServiceRequestService` — bulk-safe service class (create, resolve, query)
+- `ServiceRequestController` — thin Apex controller for the LWC
+- `serviceRequestForm` — LWC with form, recent requests grid, and resolve modal
+- `ServiceRequestServiceTest` — test class covering positive, negative, and bulk cases
+- `@InvocableMethod` for Agentforce / Flow integration
+- Permission set for non-admin access
 
-## Design Choices
+## Architecture
 
-The solution intentionally avoids unnecessary framework layers to keep the implementation simple, readable, and maintainable:
+Kept it simple on purpose — no unnecessary abstraction layers:
 
-- A single service class (`ServiceRequestService`) contains validation and DML logic.
-- A thin controller (`ServiceRequestController`) exposes only the methods needed by the LWC.
-- The LWC handles loading, error states, success feedback, and recent request display.
-- The service methods are bulk-safe and validate all inputs before performing DML.
+- **Service class** owns all validation and DML. Everything goes through here.
+- **Controller** is a thin wrapper that catches exceptions and re-throws as `AuraHandledException`.
+- **LWC** handles UX (loading spinner, toasts, inline errors, resolve modal).
+- All service methods accept lists, so they're bulk-safe out of the box.
 
-## Metadata Summary
+## Data Model
 
-### Custom Object
+**Object:** `Service_Request__c` (Auto Number: `SR-{0000}`)
 
-- `Service_Request__c`
-- Auto Number Name format: `SR-{0000}`
+| Field | Type | Notes |
+|-------|------|-------|
+| `Customer_Email__c` | Email | Required |
+| `Status__c` | Picklist | New, In Progress, Resolved |
+| `Description__c` | Long Text | — |
+| `Resolution_Notes__c` | Long Text | Captured on resolve |
+| `Priority__c` | Picklist | Low, Medium, High |
 
-### Custom Fields
+## Apex Methods
 
-- `Customer_Email__c` — Email, required
-- `Status__c` — Picklist (`New`, `In Progress`, `Resolved`)
-- `Description__c` — Long Text Area
-- `Resolution_Notes__c` — Long Text Area
-- `Priority__c` — Picklist (`Low`, `Medium`, `High`)
+**ServiceRequestService**
+- `createRequests(List<CreateRequestInput>)` — validates and inserts
+- `resolveRequests(List<ResolveRequestInput>)` — flips status, saves notes
+- `getRecentRequests(Integer)` — latest N records
+- `resolveRequestsInvocable(...)` — `@InvocableMethod` for Flow/Agentforce
 
-## Apex Overview
+**ServiceRequestController**
+- `createServiceRequest(email, description, priority)`
+- `getRecentServiceRequests()` — cacheable, returns 5 latest
+- `resolveServiceRequest(serviceRequestId, resolutionNotes)`
 
-### `ServiceRequestService`
+## LWC — `serviceRequestForm`
 
-- `createRequests(List<CreateRequestInput>)`
-- `resolveRequests(List<ResolveRequestInput>)`
-- `getRecentRequests(Integer)`
+- Form: email, description, priority → creates a record
+- Shows record ID on success
+- Loading spinner + error handling
+- Recent Requests: 5 cards in a row with status/priority badges
+- Resolve button on non-resolved cards → opens modal for resolution notes
 
-Validation includes:
+## Agentforce Bonus
 
-- required email
-- valid email format
-- allowed priority values
-- required resolution notes when resolving
-- basic CRUD / field access checks
+Added an `@InvocableMethod` (`Resolve Service Request`) so it can plug directly into Agentforce as an AI Action or be called from any Flow.
 
-### `ServiceRequestController`
-
-- `createServiceRequest(String email, String description, String priority)`
-- `getRecentServiceRequests()`
-
-## LWC Overview
-
-### `serviceRequestForm`
-
-Features:
-
-- captures email, description, and priority
-- creates a service request through Apex
-- displays the created record Id
-- handles loading and error states
-- shows the five most recent service requests
-
-## Agentforce Bonus Approach
-
-If Agentforce were enabled, I would expose a dedicated action that reuses `ServiceRequestService.resolveRequests(...)`.
-
-Suggested flow:
-
-1. Agent identifies a `Service_Request__c` record that should be resolved.
-2. An Agentforce action generates draft resolution notes from the request description and context.
-3. The action calls Apex to set `Status__c = 'Resolved'` and save `Resolution_Notes__c`.
-
-This keeps AI orchestration thin and ensures all business rules stay centralized in Apex.
+The invocable just delegates to `ServiceRequestService.resolveRequests(...)`, so all the same validation (required notes, status guard, CRUD checks) applies regardless of whether a human or AI triggers it.
 
 ## Setup
 
-## Prerequisites
+### Prerequisites
 
-- Salesforce CLI installed and available as `sf`
+- Salesforce CLI (`sf`)
 - An authenticated org or scratch org
-- Node.js and npm installed
+- Node.js + npm (for LWC tests)
 
-## Deploy Metadata
+### Deploy
 
 ```bash
 sf org login web --alias acme-dev --instance-url https://login.salesforce.com --set-default
@@ -96,32 +76,28 @@ sf project deploy start -d force-app
 sf org assign permset --name Service_Request_Access
 ```
 
-If you are using a sandbox, replace `https://login.salesforce.com` with `https://test.salesforce.com`.
+For sandbox, use `https://test.salesforce.com` instead.
 
-## Run Apex Tests
+### Run Tests
 
 ```bash
+# Apex
 sf apex run test --tests ServiceRequestServiceTest --code-coverage --result-format human
-```
 
-## Run LWC Unit Tests
-
-```bash
+# LWC (Jest)
 npm install
 npm test -- --runInBand
 ```
 
-## Use the LWC
+### Use the Component
 
-1. Open Lightning App Builder.
-2. Add the `Service Request Form` component to a Home page or App page.
-3. Save and activate the page.
+1. Open Lightning App Builder
+2. Drop `Service Request Form` onto a Home or App page
+3. Save and activate
 
 ## Assumptions
 
-- The reviewer deploys this into an org where the running user has access to custom objects and Apex.
-- `Status__c` defaults to `New` during creation.
-- Resolution is handled through Apex service logic, even though the LWC currently focuses on create use cases.
-- `Priority__c` is enforced as required in the LWC and Apex validation.
-- The recent requests bonus is intentionally lightweight and optimized for quick demo value.
-# acme-services-salesforce
+- Deploying user has access to create custom objects and run Apex
+- `Status__c` defaults to `New` on creation
+- Resolution works from both the LWC (Resolve button) and programmatically (`@InvocableMethod`)
+- `Priority__c` is validated in both the LWC and Apex

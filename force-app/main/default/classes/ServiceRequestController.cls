@@ -22,6 +22,19 @@ public with sharing class ServiceRequestController {
         }
     }
 
+    @AuraEnabled
+    public static Id resolveServiceRequest(Id serviceRequestId, String resolutionNotes) {
+        try {
+            ServiceRequestService.ResolveRequestInput input = new ServiceRequestService.ResolveRequestInput();
+            input.serviceRequestId = serviceRequestId;
+            input.resolutionNotes = resolutionNotes;
+
+            return ServiceRequestService.resolveRequests(new List<ServiceRequestService.ResolveRequestInput>{ input })[0].Id;
+        } catch (Exception exceptionInstance) {
+            throw buildAuraHandledException(exceptionInstance);
+        }
+    }
+
     private static AuraHandledException buildAuraHandledException(Exception exceptionInstance) {
         AuraHandledException handledException = new AuraHandledException(exceptionInstance.getMessage());
         handledException.setMessage(exceptionInstance.getMessage());

@@ -408,10 +408,113 @@ private class ServiceRequestServiceTest {
 
             try {
                 ServiceRequestService.resolveRequests(new List<ServiceRequestService.ResolveRequestInput>{ input });
-                System.assert(false, 'Should throw for non-existent record.');
+                Assert.fail('Should throw for non-existent record.');
             } catch (ServiceRequestService.ServiceRequestException exceptionInstance) {
-                System.assert(exceptionInstance.getMessage().contains('could not be found'), 'Error should indicate record not found.');
+                Assert.isTrue(exceptionInstance.getMessage().contains('could not be found'), 'Error should indicate record not found.');
             }
+        }
+    }
+
+    // ---------- Re-resolve guard ----------
+
+    @IsTest
+    static void resolveRequestsThrowsForAlreadyResolved() {
+        System.runAs(getTestUser()) {
+            Service_Request__c requestRecord = new Service_Request__c(
+                Customer_Email__c = 'already@example.com',
+                Description__c = 'Already resolved',
+                Priority__c = 'Medium',
+                Status__c = 'Resolved'
+            );
+            insert requestRecord;
+
+            ServiceRequestService.ResolveRequestInput input = new ServiceRequestService.ResolveRequestInput();
+            input.serviceRequestId = requestRecord.Id;
+            input.resolutionNotes = 'Trying again';
+
+            try {
+                ServiceRequestService.resolveRequests(new List<ServiceRequestService.ResolveRequestInput>{ input });
+                Assert.fail('Should throw for already resolved request.');
+            } catch (ServiceRequestService.ServiceRequestException exceptionInstance) {
+                Assert.isTrue(exceptionInstance.getMessage().contains('already resolved'), 'Error should indicate already resolved.');
+            }
+        }
+    }
+
+    // ---------- Controller tests ----------
+
+    @IsTest
+    static void controllerCreateServiceRequestReturnsId() {
+        System.runAs(getTestUser()) {
+            Test.startTest();
+            Id createdId = ServiceRequestController.createServiceRequest(
+                'controller@example.com', 'Controller test', 'High'
+            );
+            Test.stopTest();
+
+            Assert.isNotNull(createdId, 'Controller should return a record Id.');
+            Service_Request__c record = [SELECT Customer_Email__c FROM Service_Request__c WHERE Id = :createdId];
+            Assert.areEqual('controller@example.com', record.Customer_Email__c);
+        }
+    }
+
+    @IsTest
+    static void controllerCreateServiceRequestThrowsAuraHandled() {
+        System.runAs(getTestUser()) {
+            try {
+                ServiceRequestController.createServiceRequest('bad-email', 'desc', 'High');
+                Assert.fail('Should throw AuraHandledException for invalid email.');
+            } catch (AuraHandledException exceptionInstance) {
+                Assert.isTrue(exceptionInstance.getMessage().contains('email is invalid'));
+            }
+        }
+    }
+
+    @IsTest
+    static void controllerGetRecentServiceRequestsReturnsRecords() {
+        System.runAs(getTestUser()) {
+            insert new Service_Request__c(
+                Customer_Email__c = 'recent-ctrl@example.com',
+                Description__c = 'Recent controller test',
+                Priority__c = 'Low',
+                Status__c = 'New'
+            );
+
+            Test.startTest();
+            List<Service_Request__c> results = ServiceRequestController.getRecentServiceRequests();
+            Test.stopTest();
+
+            Assert.isFalse(results.isEmpty(), 'Should return at least one recent request.');
+        }
+    }
+
+    // ---------- Invocable method test ----------
+
+    @IsTest
+    static void resolveRequestsInvocableResolvesRecord() {
+        System.runAs(getTestUser()) {
+            Service_Request__c requestRecord = new Service_Request__c(
+                Customer_Email__c = 'invocable@example.com',
+                Description__c = 'Invocable test',
+                Priority__c = 'Medium',
+                Status__c = 'In Progress'
+            );
+            insert requestRecord;
+
+            ServiceRequestService.ResolveRequestInvocableInput inv = new ServiceRequestService.ResolveRequestInvocableInput();
+            inv.serviceRequestId = requestRecord.Id;
+            inv.resolutionNotes = 'Resolved via invocable';
+
+            Test.startTest();
+            List<Id> resolvedIds = ServiceRequestService.resolveRequestsInvocable(
+                new List<ServiceRequestService.ResolveRequestInvocableInput>{ inv }
+            );
+            Test.stopTest();
+
+            Assert.areEqual(1, resolvedIds.size());
+            Service_Request__c updated = [SELECT Status__c, Resolution_Notes__c FROM Service_Request__c WHERE Id = :requestRecord.Id];
+            Assert.areEqual('Resolved', updated.Status__c);
+            Assert.areEqual('Resolved via invocable', updated.Resolution_Notes__c);
         }
     }
 }

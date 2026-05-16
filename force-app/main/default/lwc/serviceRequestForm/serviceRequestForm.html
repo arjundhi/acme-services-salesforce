@@ -1,93 +1,85 @@
 <template>
     <div class="service-request-container">
         <!-- Form Section -->
-        <lightning-card title="Create Service Request" icon-name="standard:case" class="form-card">
-            <div class="slds-p-around_large">
+        <lightning-card title="Create Service Request" icon-name="standard:case">
+            <div class="slds-p-around_medium">
                 <template if:true={isLoading}>
-                    <div class="loading-overlay">
+                    <div class="slds-align_absolute-center slds-p-around_large">
                         <lightning-spinner
                             alternative-text="Processing your request"
                             size="medium"
                         ></lightning-spinner>
-                        <p class="slds-m-top_small">Creating your service request...</p>
                     </div>
                 </template>
 
                 <template if:false={isLoading}>
-                    <form class="form-section">
-                        <!-- Email Field -->
-                        <div class="slds-form-element slds-m-bottom_large">
-                            <lightning-input
-                                type="email"
-                                label="Customer Email"
-                                value={email}
-                                data-field="email"
-                                onchange={handleFieldChange}
-                                placeholder="customer@example.com"
-                                required
-                                class="form-input"
-                            ></lightning-input>
-                        </div>
+                    <!-- Email Field -->
+                    <div class="slds-form-element slds-m-bottom_medium">
+                        <lightning-input
+                            type="email"
+                            label="Customer Email"
+                            value={email}
+                            data-field="email"
+                            onchange={handleFieldChange}
+                            placeholder="customer@example.com"
+                            required
+                        ></lightning-input>
+                    </div>
 
-                        <!-- Description Field -->
-                        <div class="slds-form-element slds-m-bottom_large">
-                            <lightning-textarea
-                                label="Description"
-                                value={description}
-                                data-field="description"
-                                onchange={handleFieldChange}
-                                placeholder="Describe the service request..."
-                                rows="4"
-                                class="form-input"
-                            ></lightning-textarea>
-                        </div>
+                    <!-- Description Field -->
+                    <div class="slds-form-element slds-m-bottom_medium">
+                        <lightning-textarea
+                            label="Description"
+                            value={description}
+                            data-field="description"
+                            onchange={handleFieldChange}
+                            placeholder="Describe the service request..."
+                            rows="4"
+                        ></lightning-textarea>
+                    </div>
 
-                        <!-- Priority Field -->
-                        <div class="slds-form-element slds-m-bottom_large">
-                            <lightning-combobox
-                                label="Priority Level"
-                                value={priority}
-                                options={priorityOptions}
-                                data-field="priority"
-                                onchange={handleFieldChange}
-                                required
-                                class="form-input"
-                            ></lightning-combobox>
-                        </div>
+                    <!-- Priority Field -->
+                    <div class="slds-form-element slds-m-bottom_medium">
+                        <lightning-combobox
+                            label="Priority Level"
+                            value={priority}
+                            options={priorityOptions}
+                            data-field="priority"
+                            onchange={handleFieldChange}
+                            required
+                        ></lightning-combobox>
+                    </div>
 
-                        <!-- Action Buttons -->
-                        <div class="button-group">
-                            <lightning-button
-                                variant="brand"
-                                label="Create Service Request"
-                                onclick={handleSubmit}
-                                disabled={isLoading}
-                                class="submit-button"
-                            ></lightning-button>
-                            <lightning-button
-                                variant="neutral"
-                                label="Clear"
-                                onclick={handleClear}
-                                class="clear-button"
-                            ></lightning-button>
-                        </div>
-                    </form>
+                    <!-- Action Buttons -->
+                    <div class="button-group">
+                        <lightning-button
+                            variant="brand"
+                            label="Create Service Request"
+                            onclick={handleSubmit}
+                            disabled={isLoading}
+                        ></lightning-button>
+                        <lightning-button
+                            variant="neutral"
+                            label="Clear"
+                            onclick={handleClear}
+                        ></lightning-button>
+                    </div>
 
                     <!-- Success Message -->
                     <template if:true={createdRecordId}>
-                        <div class="success-message slds-m-top_large">
-                            <div class="slds-box slds-theme_success slds-box_small">
-                                <p class="slds-text-heading_small">
+                        <div class="slds-m-top_medium">
+                            <div class="slds-box success-message">
+                                <p>
                                     <lightning-icon
                                         icon-name="utility:success"
-                                        size="small"
-                                        class="success-icon"
+                                        size="x-small"
+                                        variant="success"
+                                        class="slds-m-right_x-small"
                                     ></lightning-icon>
-                                    Service Request Created Successfully
+                                    <strong>Service Request Created</strong>
                                 </p>
-                                <p class="slds-m-top_small">
-                                    <strong>Request ID:</strong>
-                                    <code class="request-id">{createdRecordId}</code>
+                                <p class="slds-m-top_x-small">
+                                    Record ID: <code class="request-id">{createdRecordId}</code>
                                 </p>
                             </div>
                         </div>
@@ -95,17 +87,18 @@
 
                     <!-- Error Message -->
                     <template if:true={errorMessage}>
-                        <div class="error-message slds-m-top_large">
-                            <div class="slds-box slds-theme_alert-texture slds-box_small">
-                                <p class="slds-text-heading_small">
+                        <div class="slds-m-top_medium">
+                            <div class="slds-box error-message">
+                                <p>
                                     <lightning-icon
                                         icon-name="utility:error"
-                                        size="small"
-                                        class="error-icon"
+                                        size="x-small"
+                                        variant="error"
+                                        class="slds-m-right_x-small"
                                     ></lightning-icon>
-                                    Error Creating Request
+                                    <strong>Error</strong>
                                 </p>
-                                <p class="slds-m-top_small error-text">{errorMessage}</p>
+                                <p class="slds-m-top_x-small">{errorMessage}</p>
                             </div>
                         </div>
                     </template>
@@ -115,8 +108,8 @@
 
         <!-- Recent Requests Section -->
         <template if:true={recentRequests.length}>
-            <lightning-card title="Recent Service Requests" icon-name="standard:list" class="recent-card slds-m-top_large">
-                <div class="slds-p-around_large">
+            <lightning-card title="Recent Service Requests" icon-name="standard:recent" class="slds-m-top_medium">
+                <div class="slds-p-around_medium">
                     <div class="recent-requests-list">
                         <template for:each={recentRequests} for:item="requestRecord">
                             <div key={requestRecord.Id} class="request-card">
@@ -149,11 +142,59 @@
                                         ></lightning-formatted-date-time>
                                     </div>
                                 </div>
+                                <template if:false={requestRecord.isResolved}>
+                                    <div class="slds-m-top_small">
+                                        <lightning-button
+                                            variant="success"
+                                            label="Resolve"
+                                            data-id={requestRecord.Id}
+                                            data-name={requestRecord.Name}
+                                            onclick={handleResolve}
+                                            icon-name="utility:check"
+                                        ></lightning-button>
+                                    </div>
+                                </template>
                             </div>
                         </template>
                     </div>
                 </div>
             </lightning-card>
+        </template>
+
+        <!-- Resolve Modal -->
+        <template if:true={showResolveModal}>
+            <section class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 class="slds-text-heading_medium">Resolve {resolveRecordName}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning-textarea
+                            label="Resolution Notes"
+                            value={resolutionNotes}
+                            onchange={handleResolutionNotesChange}
+                            placeholder="Describe how the request was resolved..."
+                            rows="4"
+                            required
+                        ></lightning-textarea>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button
+                            variant="neutral"
+                            label="Cancel"
+                            onclick={handleCancelResolve}
+                        ></lightning-button>
+                        <lightning-button
+                            variant="brand"
+                            label="Resolve"
+                            onclick={handleConfirmResolve}
+                            disabled={isResolving}
+                            class="slds-m-left_x-small"
+                        ></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
         </template>
     </div>
 </template>

@@ -70,6 +70,9 @@ public with sharing class ServiceRequestService {
         List<Service_Request__c> requestsToUpdate = new List<Service_Request__c>();
         for (Id requestId : requestIds) {
             Service_Request__c requestRecord = requestsById.get(requestId);
+            if (requestRecord.Status__c == 'Resolved') {
+                throw new ServiceRequestException('Service request ' + requestRecord.Id + ' is already resolved.');
+            }
             requestRecord.Status__c = 'Resolved';
             requestRecord.Resolution_Notes__c = notesById.get(requestId);
             requestsToUpdate.add(requestRecord);
@@ -160,5 +163,36 @@ public with sharing class ServiceRequestService {
                 throw new ServiceRequestException('Missing field-level access required to ' + operation + ' service requests.');
             }
         }
+    }
+
+    // ---------- Agentforce / Flow Invocable ----------
+
+    public class ResolveRequestInvocableInput {
+        @InvocableVariable(required=true description='Id of the Service Request to resolve')
+        public Id serviceRequestId;
+
+        @InvocableVariable(required=true description='Resolution notes to save on the record')
+        public String resolutionNotes;
+    }
+
+    @InvocableMethod(
+        label='Resolve Service Request'
+        description='Sets a Service Request to Resolved and saves the provided Resolution Notes. Designed for Agentforce AI Actions and Flows.'
+        category='Service Requests'
+    )
+    public static List<Id> resolveRequestsInvocable(List<ResolveRequestInvocableInput> inputs) {
+        List<ResolveRequestInput> resolveInputs = new List<ResolveRequestInput>();
+        for (ResolveRequestInvocableInput inv : inputs) {
+            ResolveRequestInput ri = new ResolveRequestInput();
+            ri.serviceRequestId = inv.serviceRequestId;
+            ri.resolutionNotes = inv.resolutionNotes;
+            resolveInputs.add(ri);
+        }
+        List<Service_Request__c> resolved = resolveRequests(resolveInputs);
+        List<Id> resolvedIds = new List<Id>();
+        for (Service_Request__c rec : resolved) {
+            resolvedIds.add(rec.Id);
+        }
+        return resolvedIds;
     }
 }
