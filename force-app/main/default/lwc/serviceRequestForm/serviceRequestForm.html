@@ -1,78 +1,159 @@
 <template>
-    <lightning-card title="Service Request Form" icon-name="standard:case">
-        <div class="slds-p-around_medium">
-            <template if:true={isLoading}>
-                <lightning-spinner alternative-text="Saving service request" size="small"></lightning-spinner>
-            </template>
+    <div class="service-request-container">
+        <!-- Form Section -->
+        <lightning-card title="Create Service Request" icon-name="standard:case" class="form-card">
+            <div class="slds-p-around_large">
+                <template if:true={isLoading}>
+                    <div class="loading-overlay">
+                        <lightning-spinner
+                            alternative-text="Processing your request"
+                            size="medium"
+                        ></lightning-spinner>
+                        <p class="slds-m-top_small">Creating your service request...</p>
+                    </div>
+                </template>
 
-            <div class="slds-grid slds-wrap slds-gutters_small">
-                <div class="slds-col slds-size_1-of-1">
-                    <lightning-input
-                        type="email"
-                        label="Customer Email"
-                        value={email}
-                        data-field="email"
-                        onchange={handleFieldChange}
-                        required
-                    ></lightning-input>
-                </div>
+                <template if:false={isLoading}>
+                    <form class="form-section">
+                        <!-- Email Field -->
+                        <div class="slds-form-element slds-m-bottom_large">
+                            <lightning-input
+                                type="email"
+                                label="Customer Email"
+                                value={email}
+                                data-field="email"
+                                onchange={handleFieldChange}
+                                placeholder="customer@example.com"
+                                required
+                                class="form-input"
+                            ></lightning-input>
+                        </div>
 
-                <div class="slds-col slds-size_1-of-1">
-                    <lightning-textarea
-                        label="Description"
-                        value={description}
-                        data-field="description"
-                        onchange={handleFieldChange}
-                    ></lightning-textarea>
-                </div>
+                        <!-- Description Field -->
+                        <div class="slds-form-element slds-m-bottom_large">
+                            <lightning-textarea
+                                label="Description"
+                                value={description}
+                                data-field="description"
+                                onchange={handleFieldChange}
+                                placeholder="Describe the service request..."
+                                rows="4"
+                                class="form-input"
+                            ></lightning-textarea>
+                        </div>
 
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                    <lightning-combobox
-                        label="Priority"
-                        value={priority}
-                        options={priorityOptions}
-                        data-field="priority"
-                        onchange={handleFieldChange}
-                        required
-                    ></lightning-combobox>
-                </div>
+                        <!-- Priority Field -->
+                        <div class="slds-form-element slds-m-bottom_large">
+                            <lightning-combobox
+                                label="Priority Level"
+                                value={priority}
+                                options={priorityOptions}
+                                data-field="priority"
+                                onchange={handleFieldChange}
+                                required
+                                class="form-input"
+                            ></lightning-combobox>
+                        </div>
 
-                <div class="slds-col slds-size_1-of-1">
-                    <lightning-button
-                        variant="brand"
-                        label="Create Service Request"
-                        onclick={handleSubmit}
-                        disabled={isLoading}
-                    ></lightning-button>
-                </div>
-            </div>
+                        <!-- Action Buttons -->
+                        <div class="button-group">
+                            <lightning-button
+                                variant="brand"
+                                label="Create Service Request"
+                                onclick={handleSubmit}
+                                disabled={isLoading}
+                                class="submit-button"
+                            ></lightning-button>
+                            <lightning-button
+                                variant="neutral"
+                                label="Clear"
+                                onclick={handleClear}
+                                class="clear-button"
+                            ></lightning-button>
+                        </div>
+                    </form>
 
-            <template if:true={createdRecordId}>
-                <div class="slds-m-top_medium slds-text-color_success">
-                    Created Service Request Id: {createdRecordId}
-                </div>
-            </template>
-
-            <template if:true={errorMessage}>
-                <div class="slds-m-top_medium slds-text-color_error">
-                    {errorMessage}
-                </div>
-            </template>
-        </div>
-
-        <template if:true={recentRequests.length}>
-            <div class="slds-p-horizontal_medium slds-p-bottom_medium">
-                <p class="slds-text-title_caps slds-m-bottom_small">Recent Service Requests</p>
-                <div class="slds-box slds-theme_default">
-                    <template for:each={recentRequests} for:item="requestRecord">
-                        <div key={requestRecord.Id} class="slds-p-vertical_x-small recent-row">
-                            <p class="slds-text-heading_small">{requestRecord.Name}</p>
-                            <p>{requestRecord.Customer_Email__c}</p>
-                            <p>{requestRecord.Priority__c} · {requestRecord.Status__c}</p>
+                    <!-- Success Message -->
+                    <template if:true={createdRecordId}>
+                        <div class="success-message slds-m-top_large">
+                            <div class="slds-box slds-theme_success slds-box_small">
+                                <p class="slds-text-heading_small">
+                                    <lightning-icon
+                                        icon-name="utility:success"
+                                        size="small"
+                                        class="success-icon"
+                                    ></lightning-icon>
+                                    Service Request Created Successfully
+                                </p>
+                                <p class="slds-m-top_small">
+                                    <strong>Request ID:</strong>
+                                    <code class="request-id">{createdRecordId}</code>
+                                </p>
+                            </div>
                         </div>
                     </template>
-                </div>
+
+                    <!-- Error Message -->
+                    <template if:true={errorMessage}>
+                        <div class="error-message slds-m-top_large">
+                            <div class="slds-box slds-theme_alert-texture slds-box_small">
+                                <p class="slds-text-heading_small">
+                                    <lightning-icon
+                                        icon-name="utility:error"
+                                        size="small"
+                                        class="error-icon"
+                                    ></lightning-icon>
+                                    Error Creating Request
+                                </p>
+                                <p class="slds-m-top_small error-text">{errorMessage}</p>
+                            </div>
+                        </div>
+                    </template>
+                </template>
             </div>
+        </lightning-card>
+
+        <!-- Recent Requests Section -->
+        <template if:true={recentRequests.length}>
+            <lightning-card title="Recent Service Requests" icon-name="standard:list" class="recent-card slds-m-top_large">
+                <div class="slds-p-around_large">
+                    <div class="recent-requests-list">
+                        <template for:each={recentRequests} for:item="requestRecord">
+                            <div key={requestRecord.Id} class="request-card">
+                                <div class="request-header">
+                                    <h3 class="request-name">{requestRecord.Name}</h3>
+                                    <span class="status-badge" data-status={requestRecord.Status__c}>
+                                        {requestRecord.Status__c}
+                                    </span>
+                                </div>
+                                <div class="request-details">
+                                    <div class="detail-row">
+                                        <span class="label">Email:</span>
+                                        <span class="value">{requestRecord.Customer_Email__c}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Priority:</span>
+                                        <span class="priority-badge" data-priority={requestRecord.Priority__c}>
+                                            {requestRecord.Priority__c}
+                                        </span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Created:</span>
+                                        <lightning-formatted-date-time
+                                            value={requestRecord.CreatedDate}
+                                            year="numeric"
+                                            month="short"
+                                            day="2-digit"
+                                            hour="2-digit"
+                                            minute="2-digit"
+                                        ></lightning-formatted-date-time>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </lightning-card>
         </template>
-    </lightning-card>
+    </div>
 </template>
